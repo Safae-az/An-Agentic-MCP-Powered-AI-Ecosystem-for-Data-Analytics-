@@ -1,0 +1,16 @@
+{
+  "run_id": "run_001",
+  "status": "completed",
+  "completed": [
+    "data_engineer",
+    "data_scientist_skipped",
+    "bi_agent_skipped",
+    "reporter_skipped"
+  ],
+  "pending": [],
+  "artifacts": {
+    "clean_csv": "runs/run_001/artifacts/clean.csv",
+    "quality_score": "0.954",
+    "final_rows": "1041670"
+  }
+}
