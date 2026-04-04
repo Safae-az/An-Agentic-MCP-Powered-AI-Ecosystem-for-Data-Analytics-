@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 uploads/
-runs/
+#runs/
 *.egg-info/
 .venv/
 venv/
