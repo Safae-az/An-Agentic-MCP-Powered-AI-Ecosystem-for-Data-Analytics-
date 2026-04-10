@@ -1,8 +1,16 @@
-# app/tools/profile_data.py
+# app/tools/profile_data.py — VERSION MCP
+# Accepte file_path au lieu de df directement
 import pandas as pd
 from app.tools.log_artifact import log_artifact
 
-def profile_data(df: pd.DataFrame, run_id: str) -> dict:
+def profile_data(file_path: str, run_id: str) -> dict:
+    """
+    Charge le CSV depuis file_path et analyse la qualite.
+    Accepte un chemin de fichier (compatible MCP).
+    """
+    print(f"[profile_data] Chargement de {file_path}...")
+    df = pd.read_csv(file_path)
+
     print(f"[profile_data] Profilage de {len(df):,} lignes...")
 
     profile = {
