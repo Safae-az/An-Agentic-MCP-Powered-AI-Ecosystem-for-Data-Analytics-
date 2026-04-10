@@ -1,11 +1,18 @@
-# app/tools/clean_data.py
+# app/tools/clean_data.py — VERSION MCP
+# Accepte file_path au lieu de df directement
 import pandas as pd
 import os
 from app.tools.log_artifact import log_artifact
 
-def clean_data(df: pd.DataFrame, run_id: str) -> tuple:
-    print(f"[clean_data] Nettoyage de {len(df):,} lignes...")
+def clean_data(file_path: str, run_id: str) -> dict:
+    """
+    Charge le CSV depuis file_path et applique 7 regles.
+    Accepte un chemin de fichier (compatible MCP).
+    """
+    print(f"[clean_data] Chargement de {file_path}...")
+    df = pd.read_csv(file_path)
 
+    print(f"[clean_data] Nettoyage de {len(df):,} lignes...")
     initial_rows = len(df)
     steps = []
 
@@ -30,14 +37,14 @@ def clean_data(df: pd.DataFrame, run_id: str) -> tuple:
                   "rows_removed": int(mask.sum())})
     print(f"  Prix nuls supprimes : {mask.sum():,}")
 
-    # 4. Customer ID manquant -> Anonymous
+    # 4. Customer ID manquant → Anonymous
     null_c = int(df['Customer ID'].isnull().sum())
     df['Customer ID'] = df['Customer ID'].fillna(0).astype(int).astype(str)
     df['Customer ID'] = df['Customer ID'].replace('0', 'Anonymous')
     steps.append({"step": "fill_customer_id", "rows_filled": null_c})
     print(f"  Customer ID anonymises : {null_c:,}")
 
-    # 5. Description manquante -> Unknown
+    # 5. Description manquante → Unknown
     df['Description'] = df['Description'].fillna('Unknown')
     steps.append({"step": "fill_description"})
 
@@ -54,13 +61,14 @@ def clean_data(df: pd.DataFrame, run_id: str) -> tuple:
     steps.append({"step": "extract_date_columns"})
     print(f"  Colonnes date extraites")
 
-    # Sauvegarder dans la structure officielle
+    # Sauvegarder dans artifacts/
     artifacts_dir = f"runs/{run_id}/artifacts"
     os.makedirs(artifacts_dir, exist_ok=True)
     csv_path = f"{artifacts_dir}/clean.csv"
     df.to_csv(csv_path, index=False)
 
     report = {
+        "status"        : "success",
         "run_id"        : run_id,
         "initial_rows"  : initial_rows,
         "final_rows"    : len(df),
@@ -71,8 +79,8 @@ def clean_data(df: pd.DataFrame, run_id: str) -> tuple:
         "columns_final" : list(df.columns)
     }
 
-    print(f"\n  {initial_rows:,} -> {len(df):,} lignes")
+    print(f"\n  {initial_rows:,} → {len(df):,} lignes")
     print(f"  Sauvegarde : {csv_path}")
 
     log_artifact(run_id, "clean_data", report)
-    return df, report
+    return report
