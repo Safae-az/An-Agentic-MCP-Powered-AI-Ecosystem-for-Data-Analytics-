@@ -1,112 +1,85 @@
-import anthropic
+# app/agents/base_agent.py
 import requests
 import json
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
 
-MCP_URL = "http://localhost:8000/call"
-
+# Outils qui retournent (df, result) au lieu d'un simple dict
+TUPLE_TOOLS = {"load_dataset"}
 
 class BaseAgent:
     """
-    Classe parent commune à tous les agents.
-    Contient la boucle while True (tool use loop),
-    l'appel à l'API Claude, et l'appel au MCP Server.
-    Chaque agent hérite de cette classe et définit
-    son propre system_prompt et ses outils autorisés.
+    Classe parent commune a tous les agents.
+    Contient la methode _call_mcp() pour appeler
+    les outils via le MCP Server.
     """
 
-    agent_name:  str = "base_agent"
-    system_prompt: str = "Tu es un agent IA."
+    def __init__(self, agent_name: str, run_id: str):
+        self.agent_name = agent_name
+        self.run_id = run_id
+        print(f"[{self.agent_name}] Agent initialise — run: {self.run_id}")
 
-    def __init__(self):
-        self.client = anthropic.Anthropic()
-
-    def run(self, step: str, context: dict) -> dict:
+    def _call_mcp(self, tool_name: str, params: dict) -> dict:
         """
-        Lance la boucle agent pour accomplir une tâche.
-        À surcharger dans les classes enfants si besoin.
+        Appelle un outil via le MCP Server.
+        C'est le SEUL moyen d'appeler un outil.
         """
-        raise NotImplementedError("Chaque agent doit implémenter run()")
+        payload = {
+            "agent": self.agent_name,
+            "tool": tool_name,
+            "params": params,
+            "run_id": self.run_id
+        }
 
-    def _call_llm(self, messages: list, tools: list) -> object:
-        """Appelle l'API Claude avec les messages et outils."""
-        return self.client.messages.create(
-            model      = "claude-sonnet-4-20250514",
-            max_tokens = 2000,
-            system     = self.system_prompt,
-            tools      = tools,
-            messages   = messages
-        )
+        print(f"[{self.agent_name}] MCP call → {tool_name}")
 
-    def _call_mcp(self, tool: str, params: dict, run_id: str) -> dict:
-        """Appelle un outil via le MCP Server."""
         try:
-            response = requests.post(MCP_URL, json={
-                "agent":  self.agent_name,
-                "tool":   tool,
-                "params": params,
-                "run_id": run_id
-            }, timeout=60)
-            response.raise_for_status()
-            return response.json().get("result", {})
+            response = requests.post(
+                f"{MCP_SERVER_URL}/call",
+                json=payload,
+                timeout=300
+            )
+
+            if response.status_code == 403:
+                print(f"[{self.agent_name}] PERMISSION REFUSEE pour {tool_name}")
+                return {"status": "error", "message": f"Permission refusee : {tool_name}"}
+
+            if response.status_code != 200:
+                print(f"[{self.agent_name}] ERREUR MCP {response.status_code}")
+                return {"status": "error", "message": f"MCP error {response.status_code}"}
+
+            result = response.json().get("result", {})
+            print(f"[{self.agent_name}] MCP OK ← {tool_name}")
+            return result
+
+        except requests.exceptions.ConnectionError:
+            print(f"[{self.agent_name}] MCP Server non disponible — appel direct")
+            return self._fallback_direct(tool_name, params)
+
         except Exception as e:
-            return {"error": str(e)}
+            print(f"[{self.agent_name}] Exception MCP : {e}")
+            return {"status": "error", "message": str(e)}
 
-    def _run_loop(self, messages: list, tools: list, run_id: str) -> str:
+    def _fallback_direct(self, tool_name: str, params: dict) -> dict:
         """
-        Boucle principale tool use.
-        Tourne jusqu'à ce que Claude retourne stop_reason == end_turn.
-        Retourne le texte final de Claude.
+        Fallback si le MCP Server n'est pas demarre.
+        Gere les outils qui retournent (df, result) ou juste un dict.
         """
-        max_iterations = 10
-        iteration = 0
+        print(f"[{self.agent_name}] FALLBACK direct → {tool_name}")
+        import importlib
 
-        while iteration < max_iterations:
-            iteration += 1
+        try:
+            module = importlib.import_module(f"app.tools.{tool_name}")
+            func = getattr(module, tool_name)
+            raw = func(**params)
 
-            response = self._call_llm(messages, tools)
+            if tool_name in TUPLE_TOOLS:
+                # load_dataset et clean_data retournent (df, result_dict)
+                _, result = raw
+                return result
+            else:
+                return raw
 
-            # Cas 1 : Claude a fini
-            if response.stop_reason == "end_turn":
-                for block in response.content:
-                    if hasattr(block, "text"):
-                        return block.text
-                return "Terminé."
-
-            # Cas 2 : Claude veut appeler un outil
-            if response.stop_reason == "tool_use":
-
-                # Ajouter la réponse de Claude dans l'historique
-                messages.append({
-                    "role":    "assistant",
-                    "content": response.content
-                })
-
-                # Exécuter chaque outil demandé
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        print(f"    🔧 {self.agent_name} → {block.name}({list(block.input.keys())})")
-
-                        result = self._call_mcp(block.name, block.input, run_id)
-
-                        tool_results.append({
-                            "type":        "tool_result",
-                            "tool_use_id": block.id,
-                            "content":     json.dumps(result)
-                        })
-
-                # Ajouter les résultats dans l'historique
-                messages.append({
-                    "role":    "user",
-                    "content": tool_results
-                })
-
-            # Cas 3 : tokens dépassés
-            elif response.stop_reason == "max_tokens":
-                return "Réponse tronquée — augmenter max_tokens"
-
-        return "Limite d'itérations atteinte"
+        except Exception as e:
+            return {"status": "error", "message": str(e)}

@@ -10,3 +10,6 @@ python-dotenv
 ucimlrepo
 kaleido
 weasyprint
+requests
+mcp
+

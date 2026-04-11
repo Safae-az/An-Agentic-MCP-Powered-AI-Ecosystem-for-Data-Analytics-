@@ -1,51 +1,21 @@
 # app/tools/log_artifact.py
-from app.storage.artifact_store import ArtifactStore
-from app.orchestrator.models import Artifact
-import uuid
-import os
-import json
+# Version simplifiee — autonome, sans imports complexes
+import json, os
+from datetime import datetime
 
-store = ArtifactStore()
+def log_artifact(run_id: str, tool_name: str, data: dict) -> None:
+    """Enregistre chaque appel outil dans tool_calls.jsonl"""
 
-def log_artifact(
-    run_id       : str,
-    artifact_type: str = "generic",   # ← type → artifact_type (mot réservé Python)
-    path         : str = "",
-    producer     : str = "",
-    metadata     : dict = {}
-) -> dict:
+    run_dir = f"runs/{run_id}"
+    os.makedirs(f"{run_dir}/artifacts", exist_ok=True)
+    os.makedirs(f"{run_dir}/charts",    exist_ok=True)
 
-    # Si le fichier est un JSON d'insights → enrichir metadata
-    if os.path.exists(path) and path.endswith(".json"):
-        try:
-            with open(path, "r") as f:
-                data = json.load(f)
-                if "kpis"     in data: metadata["kpis"]     = data["kpis"]
-                if "alertes"  in data: metadata["alertes"]  = data["alertes"]
-                if "insights" in data: metadata["insights"] = data["insights"]
-        except Exception as e:
-            metadata["read_error"] = str(e)
-
-    # Type automatique pour insights.json
-    if artifact_type == "generic" and path.endswith("insights.json"):
-        artifact_type = "insights"
-
-    artifact = Artifact(
-        artifact_id = str(uuid.uuid4())[:8],
-        type        = artifact_type,
-        path        = path,
-        producer    = producer,
-        metadata    = metadata
-    )
-
-    store.save_artifact(run_id, artifact)
-
-    print(f"[log_artifact] {producer} → {artifact_type} : {path}")
-
-    return {
-        "artifact_id": artifact.artifact_id,
-        "saved"      : True,
-        "type"       : artifact_type,
-        "path"       : path,
-        "metadata"   : metadata
+    entry = {
+        "timestamp" : datetime.now().isoformat(),
+        "run_id"    : run_id,
+        "tool"      : tool_name,
+        "data"      : data
     }
+
+    with open(f"{run_dir}/tool_calls.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")

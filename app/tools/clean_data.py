@@ -83,4 +83,6 @@ def clean_data(file_path: str, run_id: str) -> dict:
     print(f"  Sauvegarde : {csv_path}")
 
     log_artifact(run_id, "clean_data", report)
+
     return report
+

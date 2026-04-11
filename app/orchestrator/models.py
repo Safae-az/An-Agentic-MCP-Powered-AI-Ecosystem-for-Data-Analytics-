@@ -68,3 +68,5 @@ class ToolCall:
         self.run_id = run_id
         self.result = None
         self.success = False
+
+        self.success = False

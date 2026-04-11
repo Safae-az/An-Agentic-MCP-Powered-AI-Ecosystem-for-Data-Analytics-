@@ -34,4 +34,6 @@ def load_dataset(file_path: str, run_id: str) -> dict:
         "status" : "success",
         "rows"   : len(df)
     })
+
     return result   # dict seulement — plus de tuple
+
