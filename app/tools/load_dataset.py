@@ -3,14 +3,20 @@ import pandas as pd
 import os
 from app.tools.log_artifact import log_artifact
 
-def load_dataset(file_path: str, run_id: str) -> tuple:
+def load_dataset(file_path: str, run_id: str) -> dict:
+    """
+    Charge le CSV et retourne schema + preview.
+    Retourne un dict JSON (compatible MCP).
+    """
     print(f"[load_dataset] Chargement de {file_path}...")
 
     if not os.path.exists(file_path):
-        result = {"status": "error",
-                  "message": f"Fichier introuvable : {file_path}"}
+        result = {
+            "status"  : "error",
+            "message" : f"Fichier introuvable : {file_path}"
+        }
         log_artifact(run_id, "load_dataset", result)
-        return None, result
+        return result
 
     df = pd.read_csv(file_path)
 
@@ -28,4 +34,4 @@ def load_dataset(file_path: str, run_id: str) -> tuple:
         "status" : "success",
         "rows"   : len(df)
     })
-    return df, result
+    return result   # dict seulement — plus de tuple
