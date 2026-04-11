@@ -49,17 +49,40 @@ TOOL_SCHEMAS = [
         }
     },
     {
-        "name": "run_analysis",
-        "description": "Calcule les KPIs business : CA, taux retour, panier moyen, alertes",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "file_path": {"type": "string", "description": "Fichier nettoyé à analyser"},
-                "run_id":    {"type": "string", "description": "ID du run en cours"}
+    "name": "run_analysis",
+    "description": (
+        "Calcule les KPIs business d'un dataset e-commerce nettoyé : "
+        "CA total, CA par mois, CA par pays, panier moyen, "
+        "taux d'annulation (factures uniques commençant par 'C'), "
+        "taux de retour (lignes Quantity < 0), top 10 produits, "
+        "data quality score. Génère des alertes warning/critical "
+        "selon les seuils configurés et produit des insights textuels."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "file_path": {
+                "type": "string",
+                "description": (
+                    "Chemin vers le fichier CSV nettoyé à analyser. "
+                    "Colonnes requises : InvoiceNo, Quantity, UnitPrice. "
+                    "Colonnes optionnelles : InvoiceDate, Country, CustomerID, Description."
+                )
             },
-            "required": ["file_path", "run_id"]
-        }
-    },
+            "run_id": {
+                "type": "string",
+                "description": (
+                    "ID unique du run en cours. "
+                    "Utilisé pour sauvegarder les résultats sous "
+                    "runs/{run_id}/artifacts/insights.json."
+                )
+            }
+        },
+        "required": ["file_path", "run_id"],
+        "additionalProperties": False
+    }
+},
+    
     {
         "name": "generate_chart",
         "description": "Génère un graphique interactif Plotly (bar, line, pie, scatter)",
