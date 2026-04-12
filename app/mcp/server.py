@@ -11,7 +11,7 @@ app   = FastAPI(title="MCP Server — KPI Monitoring")
 store = ArtifactStore()
 
 # Seul load_dataset retourne (df, result) — les autres retournent dict
-TUPLE_TOOLS = {"load_dataset"}
+TUPLE_TOOLS = set() 
 
 
 class ToolRequest(BaseModel):
