@@ -35,19 +35,18 @@ def call_tool(req: ToolRequest):
 
     # 3. Exécuter
     try:
-        module = importlib.import_module(module_path)
-        func   = getattr(module, req.tool)
-        raw    = func(**req.params)
-
-        # load_dataset retourne (df, result) — on prend seulement result
+        module  = importlib.import_module(module_path)
+        func    = getattr(module, req.tool)
+        raw     = func(**req.params)
         result  = raw[1] if req.tool in TUPLE_TOOLS else raw
         success = True
         error   = ""
-     except Exception as e:
+        print(f"OUTIL OK : {req.tool}")
+    except Exception as e:
         result  = {}
         success = False
         error   = str(e)
-        print(f"ERREUR OUTIL : {e}")  # ← ajouter cette ligne
+        print(f"ERREUR OUTIL : {e}")
     # 4. Logger
     if req.run_id:
         # CORRECTION
