@@ -43,11 +43,11 @@ def call_tool(req: ToolRequest):
         result  = raw[1] if req.tool in TUPLE_TOOLS else raw
         success = True
         error   = ""
-    except Exception as e:
+     except Exception as e:
         result  = {}
         success = False
         error   = str(e)
-
+        print(f"ERREUR OUTIL : {e}")  # ← ajouter cette ligne
     # 4. Logger
     if req.run_id:
         # CORRECTION
