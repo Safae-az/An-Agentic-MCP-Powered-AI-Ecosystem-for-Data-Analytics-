@@ -20,29 +20,29 @@ def run_analysis(file_path: str, run_id: str) -> dict:
         df = pd.read_csv(file_path, low_memory=False)
 
         # ── Création colonne Revenue si nécessaire ─────────
-        if "Revenue" not in df.columns:
+        if "Sales" not in df.columns:
             if "Quantity" in df.columns and "UnitPrice" in df.columns:
-                df["Revenue"] = df["Quantity"] * df["UnitPrice"]
+                df["Sales"] = df["Quantity"] * df["UnitPrice"]
             else:
-                df["Revenue"] = 0.0
+                df["Sales"] = 0.0
 
         kpis = {}
 
         # ── CA total et moyen ─────────────────────────────
         kpis["CA_total"]      = round(float(df["Revenue"].sum()), 2)
-        kpis["revenue_moyen"] = round(float(df["Revenue"].mean()), 2)
+        kpis["revenue_moyen"] = round(float(df["Sales"].mean()), 2)
 
         # ── CA par mois ───────────────────────────────────
         if "InvoiceDate" in df.columns:
             df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"], errors="coerce")
             df["Month"]       = df["InvoiceDate"].dt.to_period("M").astype(str)
-            ca_mois           = df.groupby("Month")["Revenue"].sum().round(2)
+            ca_mois           = df.groupby("Month")["Sales"].sum().round(2)
             kpis["CA_par_mois"] = ca_mois.to_dict()
 
         # ── CA par pays ───────────────────────────────────
         if "Country" in df.columns:
             ca_pays = (
-                df.groupby("Country")["Revenue"]
+                df.groupby("Country")["Sales"]
                   .sum()
                   .sort_values(ascending=False)
                   .head(10)
@@ -59,13 +59,13 @@ def run_analysis(file_path: str, run_id: str) -> dict:
             total_commandes      = df["InvoiceNo"].nunique()
             kpis["nb_commandes"] = total_commandes
             if total_commandes > 0:
-                panier_moyen         = df.groupby("InvoiceNo")["Revenue"].sum().mean()
+                panier_moyen         = df.groupby("InvoiceNo")["Sales"].sum().mean()
                 kpis["panier_moyen"] = round(float(panier_moyen), 2)
 
         # ── Top produits par revenue ──────────────────────
         if "Description" in df.columns:
             top_produits = (
-                df.groupby("Description")["Revenue"]
+                df.groupby("Description")["Sales"]
                   .sum()
                   .sort_values(ascending=False)
                   .head(10)
