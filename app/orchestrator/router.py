@@ -23,26 +23,18 @@
 
 # app/orchestrator/router.py
 from app.agents.data_engineer import DataEngineerAgent
+from app.agents.data_scientist import DataScientistAgent
+
 
 class Router:
-    """
-    Décide QUI fait la tâche.
-    Reçoit un nom de tâche et retourne le bon agent.
-    """
-
     def get_agent(self, task_name: str, run_id: str):
-        """
-        Table de correspondance tâche → agent.
-        Exemple :
-            "data_engineer" → DataEngineerAgent
-        """
-        print(f"[Router] Tache '{task_name}' → agent correspondant")
 
-        if task_name == "data_engineer":
+        if task_name == 'data_engineer':
             return DataEngineerAgent(run_id=run_id)
 
-        # Les autres agents seront ajoutés par P2/P3/P4
-        # quand ils auront codé leurs agents
-        else:
-            print(f"[Router] Agent '{task_name}' pas encore disponible — skip")
-            return None
+        if task_name == 'data_scientist':
+            return DataScientistAgent(run_id=run_id)  # ← AJOUTER
+
+        print(f"[Router] '{task_name}' pas encore disponible")
+        return None
+
