@@ -9,7 +9,9 @@ class DataEngineerAgent(BaseAgent):
     au lieu d'appels directs Python.
     """
 
-    SYSTEM_PROMPT = """
+    agent_name = "data_engineer"
+
+    system_prompt = """
     Tu es le Data Engineer d'une equipe d'agents IA.
     Tu charges, profiles et nettoies des datasets.
     Tu utilises toujours ces outils dans cet ordre :
@@ -19,12 +21,10 @@ class DataEngineerAgent(BaseAgent):
     Tous les appels passent par le MCP Server.
     """
 
-    def __init__(self, run_id: str):
-        # Appelle le constructeur parent
-        super().__init__(
-            agent_name = "data_engineer",
-            run_id     = run_id
-        )
+    def __init__(self, run_id: str = ""):
+        # CORRECTION : ne pas passer agent_name à super().__init__()
+        # agent_name est déjà défini comme attribut de classe ci-dessus
+        super().__init__(run_id=run_id)
 
     def run(self, file_path: str) -> dict:
         print(f"\n{'='*55}")
@@ -37,7 +37,7 @@ class DataEngineerAgent(BaseAgent):
         load_result = self._call_mcp("load_dataset", {
             "file_path" : file_path,
             "run_id"    : self.run_id
-        })
+        }, self.run_id)
 
         if load_result.get("status") == "error":
             print(f"[DataEngineer] ERREUR load_dataset : {load_result}")
@@ -51,7 +51,7 @@ class DataEngineerAgent(BaseAgent):
         profile_result = self._call_mcp("profile_data", {
             "file_path" : file_path,
             "run_id"    : self.run_id
-        })
+        }, self.run_id)
 
         quality_score = profile_result.get("quality_score", 0)
         print(f"[DataEngineer] profile_data OK — score qualite : {quality_score}")
@@ -61,7 +61,7 @@ class DataEngineerAgent(BaseAgent):
         clean_result = self._call_mcp("clean_data", {
             "file_path" : file_path,
             "run_id"    : self.run_id
-        })
+        }, self.run_id)
 
         if clean_result.get("status") == "error":
             print(f"[DataEngineer] ERREUR clean_data : {clean_result}")
@@ -84,7 +84,7 @@ class DataEngineerAgent(BaseAgent):
         }
 
         print(f"\n{'='*55}")
-        print(f"  PIPELINE TERMINE !")
+        print(f"  DATA ENGINEER TERMINE !")
         print(f"  Dataset propre : {clean_path}")
         print(f"  Lignes finales : {final_rows:,}")
         print(f"  Score qualite  : {quality_score}")
