@@ -7,6 +7,8 @@ TOOL_MODULES = {
 
     # ── P2 (Data Guy) — à remplir par P2 ─────────────
     "load_dataset":      "app.tools.load_dataset",
+    "load_from_url":     "app.tools.load_dataset",
+    "load_from_api":     "app.tools.load_dataset",
     "quality_check":     "app.tools.quality_check",
     "profile_data":      "app.tools.profile_data",
     "clean_data":        "app.tools.clean_data",

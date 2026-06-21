@@ -14,6 +14,32 @@ TOOL_SCHEMAS = [
         }
     },
     {
+        "name": "load_from_url",
+        "description": "Telecharge un dataset depuis un lien direct public puis le charge comme fichier local",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "URL directe vers un fichier CSV, JSON, Excel, Parquet, TSV ou TXT"},
+                "run_id": {"type": "string", "description": "ID du run en cours"}
+            },
+            "required": ["url", "run_id"]
+        }
+    },
+    {
+        "name": "load_from_api",
+        "description": "Appelle une API avec une cle personnelle puis charge la reponse comme dataset",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "api_url": {"type": "string", "description": "Endpoint API qui retourne les donnees"},
+                "api_key": {"type": "string", "description": "Cle API personnelle de l'utilisateur"},
+                "run_id": {"type": "string", "description": "ID du run en cours"},
+                "key_param": {"type": "string", "description": "Nom optionnel du parametre query qui porte la cle API, ex: appid ou api_key"}
+            },
+            "required": ["api_url", "api_key", "run_id"]
+        }
+    },
+    {
         "name": "quality_check",
         "description": "Analyse la qualité du dataset : nulls, doublons, anomalies, score qualité",
         "input_schema": {

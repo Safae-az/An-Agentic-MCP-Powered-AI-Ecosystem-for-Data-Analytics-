@@ -26,10 +26,10 @@ class ArtifactStore:
         with open(path, "w") as f:
             json.dump(artifacts, f, indent=2)
 
-     def log_tool_call(self, run_id: str, call):
-     path = f"{self.base_dir}/{run_id}/tool_calls.jsonl"
-     os.makedirs(os.path.dirname(path), exist_ok=True)
-     with open(path, "a") as f:
+    def log_tool_call(self, run_id: str, call):
+      path = f"{self.base_dir}/{run_id}/tool_calls.jsonl"
+      os.makedirs(os.path.dirname(path), exist_ok=True)
+      with open(path, "a") as f:
         try:
             entry = {
                 "timestamp":  call.timestamp or datetime.now().isoformat(),

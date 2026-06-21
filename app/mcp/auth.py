@@ -1,7 +1,7 @@
 PERMISSIONS = {
     "orchestrator"  : ["*"],
-    "data_quality"  : ["load_dataset", "quality_check", "log_artifact"],
-    "data_engineer" : ["load_dataset", "profile_data", "clean_data", "log_artifact"],
+    "data_quality"  : ["load_dataset", "load_from_url", "load_from_api", "quality_check", "log_artifact"],
+    "data_engineer" : ["load_dataset", "load_from_url", "load_from_api", "profile_data", "clean_data", "log_artifact"],
     "data_scientist": ["run_analysis", "log_artifact"],   # ← kpi_calculator → data_scientist
     "bi_agent"      : ["generate_chart", "publish_dashboard", "log_artifact"],
     "reporter"      : ["compile_report", "log_artifact"],

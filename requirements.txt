@@ -1,4 +1,5 @@
 fastapi
+python-multipart
 uvicorn
 pydantic
 groq
@@ -9,4 +10,5 @@ openpyxl
 plotly
 python-dotenv
 ucimlrepo
-
+weasyprint
+requests

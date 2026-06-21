@@ -11,8 +11,7 @@ app   = FastAPI(title="MCP Server — KPI Monitoring")
 store = ArtifactStore()
 
 # Seul load_dataset retourne (df, result) — les autres retournent dict
-TUPLE_TOOLS = set() 
-
+TUPLE_TOOLS = set()
 
 class ToolRequest(BaseModel):
     agent:  str
@@ -47,18 +46,19 @@ def call_tool(req: ToolRequest):
         success = False
         error   = str(e)
         print(f"ERREUR OUTIL : {e}")
+
     # 4. Logger
     if req.run_id:
-        # CORRECTION
-        store.log_tool_call(req.run_id, ToolCall(
-            agent_name = req.agent,
-            tool_name  = req.tool,
-            input      = req.params,
-            output     = result if isinstance(result, dict) else {},
-            success    = success,
-            error      = error,
-            timestamp  = ""
-         ))
+       # CORRECTION
+       store.log_tool_call(req.run_id, ToolCall(
+        agent_name = req.agent,
+        tool_name  = req.tool,
+        input      = req.params,
+        output     = result if isinstance(result, dict) else {},
+        success    = success,
+        error      = error,
+        timestamp  = ""
+      ))
 
     if not success:
         raise HTTPException(500, error)

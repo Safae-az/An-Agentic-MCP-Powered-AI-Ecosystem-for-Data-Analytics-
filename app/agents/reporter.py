@@ -1,12 +1,13 @@
 from app.agents.base_agent import BaseAgent
-from app.mcp.schemas import get_schemas_for_agent
 
 
 class ReporterAgent(BaseAgent):
     """
-    Agent responsable de la compilation du rapport final PDF.
-    Gère l'étape : reporter.
-    Codé par P4.
+    Final pipeline agent.
+
+    It consumes the artifacts produced by the previous agents and asks the MCP
+    server to compile a final HTML report. The agent is deterministic on purpose:
+    the report must be generated every time, even if the LLM/API is unavailable.
     """
 
     agent_name = "reporter"
@@ -14,57 +15,104 @@ class ReporterAgent(BaseAgent):
     system_prompt = """
 Tu es le Reporter du pipeline analytics.
 
-Ton rôle :
-1. Collecter tous les résultats du run (qualité, KPIs, dashboard)
-2. Appeler compile_report pour générer le rapport PDF
-3. Appeler log_artifact pour sauvegarder le rapport
+Ton role:
+1. Collecter les resultats du run: qualite, KPIs, alertes, insights, dashboard.
+2. Appeler compile_report pour generer le rapport final HTML.
+3. Appeler log_artifact pour tracer le rapport produit.
 
-Le rapport PDF doit contenir :
-- Résumé exécutif (objectif du run)
-- Data Quality Score et problèmes détectés
-- KPIs business calculés
-- Alertes déclenchées
-- Référence au dashboard interactif
-- Décisions prises par chaque agent
-
-Toujours retourner un JSON avec :
-- report_path  : chemin vers le PDF généré
-- summary      : résumé en 2-3 phrases
+Retourne toujours un JSON avec report_path et summary.
 """
 
     def run(self, step: str, context: dict) -> dict:
-        run_id    = context.get("run_id", "")
-        objective = context.get("objective", "")
-        artifacts = context.get("artifacts", {})
+        run_id = context.get("run_id", self.run_id)
+        artifacts = context.get("artifacts", {}) or {}
 
-        tools = get_schemas_for_agent(self.agent_name)
+        print(f"\n{'='*55}")
+        print(f"  REPORTER AGENT - {run_id}")
+        print(f"  Compilation du rapport final via MCP Server")
+        print(f"{'='*55}")
 
-        messages = [{
-            "role": "user",
-            "content": f"""
-Étape demandée : {step}
-Run ID : {run_id}
-Objectif original : {objective}
-Artifacts produits : {list(artifacts.keys())}
+        if not run_id:
+            return {
+                "status": "error",
+                "agent": self.agent_name,
+                "step": step,
+                "error": "run_id manquant pour generer le rapport.",
+            }
 
-Génère le rapport PDF final pour ce run.
-Retourne un JSON avec report_path et summary.
-"""
-        }]
+        report_result = self._call_mcp(
+            "compile_report",
+            {"run_id": run_id},
+            run_id,
+        )
 
-        result_text = self._run_loop(messages, tools, run_id)
+        if report_result.get("error"):
+            return {
+                "status": "error",
+                "agent": self.agent_name,
+                "step": "compile_report",
+                "error": report_result.get("error"),
+            }
 
-        return self._parse_result(result_text, run_id)
+        report_path = report_result.get("report_path", "")
+        pdf_path = report_result.get("pdf_path", "")
+        excel_path = report_result.get("excel_path", "")
+        summary = self._build_summary(report_result, artifacts)
 
-    def _parse_result(self, text: str, run_id: str) -> dict:
-        import json, re
-        try:
-            match = re.search(r'\{.*\}', text, re.DOTALL)
-            if match:
-                return json.loads(match.group())
-        except:
-            pass
-        return {
-            "report_path": f"runs/{run_id}/artifacts/report.pdf",
-            "summary":     text[:300],
+        log_result = self._call_mcp(
+            "log_artifact",
+            {
+                "run_id": run_id,
+                "tool_name": "compile_report",
+                "data": {
+                    "type": "report",
+                    "path": report_path,
+                    "producer": self.agent_name,
+                    "metadata": {
+                        "pdf_path": pdf_path,
+                        "excel_path": excel_path,
+                        "nb_kpis": report_result.get("nb_kpis", 0),
+                        "nb_alertes": report_result.get("nb_alertes", 0),
+                        "nb_charts": report_result.get("nb_charts", 0),
+                    },
+                },
+            },
+            run_id,
+        )
+
+        if isinstance(log_result, dict) and log_result.get("error"):
+            print(f"[Reporter] Warning log_artifact: {log_result.get('error')}")
+
+        final = {
+            "status": "success",
+            "agent": self.agent_name,
+            "run_id": run_id,
+            "report_path": report_path,
+            "pdf_path": pdf_path,
+            "excel_path": excel_path,
+            "summary": summary,
+            "generated": bool(report_result.get("generated")),
+            "nb_kpis": report_result.get("nb_kpis", 0),
+            "nb_alertes": report_result.get("nb_alertes", 0),
+            "nb_charts": report_result.get("nb_charts", 0),
         }
+
+        print(f"[Reporter] Rapport genere : {report_path}")
+        print(f"{'='*55}\n")
+        return final
+
+    def _build_summary(self, report_result: dict, artifacts: dict) -> str:
+        nb_kpis = report_result.get("nb_kpis", 0)
+        nb_alertes = report_result.get("nb_alertes", 0)
+        nb_charts = report_result.get("nb_charts", 0)
+        pdf_status = report_result.get("pdf_status", "unknown")
+        dashboard = (
+            artifacts.get("bi_agent", {}).get("dashboard_path")
+            or report_result.get("dashboard_path")
+            or "dashboard non disponible"
+        )
+        return (
+            f"Rapport final genere avec {nb_kpis} KPI(s), "
+            f"{nb_alertes} alerte(s) et {nb_charts} chart(s). "
+            f"Dashboard associe: {dashboard}. PDF: {pdf_status}."
+        )

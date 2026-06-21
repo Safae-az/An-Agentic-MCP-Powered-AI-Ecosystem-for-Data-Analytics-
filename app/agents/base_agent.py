@@ -2,11 +2,14 @@ import groq
 import requests
 import json
 import os
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MCP_URL = "http://localhost:8000/call"
+MCP_URL = os.getenv("MCP_URL", "http://localhost:8000/call")
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent:
@@ -14,10 +17,12 @@ class BaseAgent:
     agent_name    = "base_agent"
     system_prompt = "Tu es un agent IA."
 
+    HEAVY_TOOLS = {"clean_data", "profile_data", "run_analysis"}
+
     def __init__(self, run_id: str = ""):
         self.run_id = run_id
         self.client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model  = "llama-3.1-8b-instant"
+        self.model  = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         print(f"🚀 Groq — modèle : {self.model} — agent : {self.agent_name}")
 
     def _call_llm(self, messages: list, tools: list):
@@ -127,18 +132,22 @@ class BaseAgent:
         return "Limite d'itérations atteinte"
 
     def _call_mcp(self, tool: str, params: dict, run_id: str) -> dict:
+        timeout = int(os.getenv("MCP_TIMEOUT_HEAVY", 600)) if tool in self.HEAVY_TOOLS \
+                  else int(os.getenv("MCP_TIMEOUT_LIGHT", 60))
         try:
             response = requests.post(MCP_URL, json={
                 "agent":  self.agent_name,
                 "tool":   tool,
                 "params": params,
                 "run_id": run_id
-            }, timeout=60)
+            }, timeout=timeout)
             response.raise_for_status()
             return response.json().get("result", {})
         except requests.Timeout:
-            return {"error": "Timeout"}
+            logger.warning("[_call_mcp] TIMEOUT sur '%s' apres %ds", tool, timeout)
+            return {"error": f"Timeout apres {timeout}s"}
         except Exception as e:
+            logger.error("[_call_mcp] ERREUR sur '%s' : %s", tool, e)
             return {"error": str(e)}
 
     def run(self, step: str = "", context: dict = {}) -> dict:
@@ -168,7 +177,7 @@ class GroqResponse:
             for tc in message.tool_calls:
                 try:
                     input_data = json.loads(tc.function.arguments)
-                except:
+                except (json.JSONDecodeError, ValueError):
                     input_data = {}
                 self.content.append(_ToolUseBlock(
                     id    = tc.id,

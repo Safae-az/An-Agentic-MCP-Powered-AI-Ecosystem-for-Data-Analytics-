@@ -1,7 +1,8 @@
-
 # app/orchestrator/router.py
 from app.agents.data_engineer  import DataEngineerAgent
 from app.agents.data_scientist import DataScientistAgent
+from app.agents.bi_agent       import BIAgent
+from app.agents.reporter       import ReporterAgent
 
 
 class Router:
@@ -19,7 +20,12 @@ class Router:
         elif task_name == "data_scientist":
             return DataScientistAgent(run_id=run_id)
 
-        # bi_agent et reporter seront ajoutés par P3 et P4
+        elif task_name == "bi_agent":
+            return BIAgent(run_id=run_id)
+
+        elif task_name == "reporter":
+            return ReporterAgent(run_id=run_id)
+
         else:
             print(f"[Router] Agent '{task_name}' pas encore disponible — skip")
             return None
