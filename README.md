@@ -36,7 +36,6 @@ The report explains the project context, architecture, agents, MCP concept, impl
 | Project type | Projet de Fin d'Annee |
 | Academic year | 2025-2026 |
 | Field | DATA SCIENCE AND CLOUD COMPUTING|
-| Option | Artificial Intelligence and Analytics |
 | Project title | An Agentic MCP-Powered AI Ecosystem for Data Analytics |
 
 
