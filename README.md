@@ -35,22 +35,10 @@ The report explains the project context, architecture, agents, MCP concept, impl
 |---|---|
 | Project type | Projet de Fin d'Annee |
 | Academic year | 2025-2026 |
-| Field | Computer Science / Data Science |
+| Field | DATA SCIENCE AND CLOUD COMPUTING|
 | Option | Artificial Intelligence and Analytics |
 | Project title | An Agentic MCP-Powered AI Ecosystem for Data Analytics |
 
----
-
-## Group Members
-
-| Full Name | Main Contribution |
-|---|---|
-| Jawad El Kharrati | Orchestration, DevOps Agent, GitHub integration, anonymous data support |
-| Member 2 | Data engineering, dataset loading, cleaning, profiling |
-| Member 3 | Data science, KPI analysis, insights generation |
-| Member 4 | BI dashboard, reporting, UI integration |
-
-> Update the names above with the final official group member names before submission.
 
 ---
 
@@ -747,13 +735,9 @@ It demonstrates how LLMs, MCP, FastAPI, and data analytics tools can be combined
 
 ## Authors
 
-Developed by Group 3.
-
 **Project:** An Agentic MCP-Powered AI Ecosystem for Data Analytics  
 **Academic Year:** 2025-2026  
-**Field:** Computer Science / Data Science  
-**Option:** Artificial Intelligence and Analytics
-
+**Field:** DATA SCIENCE AND CLOUD COMPUTING 
 ---
 
 ## License
